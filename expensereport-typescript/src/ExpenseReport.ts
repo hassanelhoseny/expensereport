@@ -1,56 +1,37 @@
-const message = 'Hello, World!\n';
+import { printMessage } from './printMessage'
+import { sumTwoValues } from './mathUtils'
+import { printHelloWorld } from './helloWorldMessage'
+import { Expense, ExpenseType } from './expense'
+import { accumulateTotals, Totals } from './expenseTotals'
+import { EXPENSE_CONFIG } from './expenseConfig'
 
-const sumTwoValues = (a: number, b: number): number => a + b
 
-const printHelloWorld = (): void => {
-  process.stdout.write(message);
+const isMealOverExpense = (expense: Expense): boolean => {
+  const limit = EXPENSE_CONFIG[expense.type].overLimit
+  return limit !== undefined && expense.amount > limit
 }
 
-type ExpenseType = "dinner" | "breakfast" | "car-rental"
+const overExpenseMarker = (expense: Expense): string => (isMealOverExpense(expense) ? 'X' : ' ')
 
-class Expense {
-  type: ExpenseType
-  amount: number
-  constructor(type: ExpenseType, amount: number) {
-    this.type = type
-    this.amount = amount
-  }
+const reportDate = (date: Date): string => date.toISOString().slice(0, 10)
+
+const formatExpenseLine = (expense: Expense): string => {
+  const { label } = EXPENSE_CONFIG[expense.type]
+  const marker = overExpenseMarker(expense)
+  return `${label}\t${expense.amount}\t${marker}\n`
 }
 
 function printReport(expenses: Expense[]) {
-  let totalExpenses: number = 0
-  let mealExpenses: number = 0
+   let totals: Totals = { totalExpenses: 0, mealExpenses: 0 }
+  printMessage('Expenses: ' + reportDate(new Date()) + '\n')
 
-  process.stdout.write("Expenses: " + new Date().toISOString().substr(0, 10) + "\n")
-
-
-  for (const expense of expenses) {
-    if (expense.type == "dinner" || expense.type == "breakfast") {
-      mealExpenses += expense.amount
-    }
-
-    let expenseName = ""
-    switch (expense.type) {
-      case "dinner":
-        expenseName = "Dinner"
-        break
-      case "breakfast":
-        expenseName = "Breakfast"
-        break
-      case "car-rental":
-        expenseName = "Car Rental"
-        break
-    }
-
-    let mealOverExpensesMarker = expense.type == "dinner" && expense.amount > 5000 || expense.type == "breakfast" && expense.amount > 1000 ? "X" : " "
-
-    process.stdout.write(expenseName + "\t" + expense.amount + "\t" + mealOverExpensesMarker + "\n")
-
-    totalExpenses += expense.amount
+ for (const expense of expenses) {
+    totals = accumulateTotals(totals, expense)
+    printMessage(formatExpenseLine(expense))
   }
 
-  process.stdout.write("Meal Expenses: " + mealExpenses + "\n")
-  process.stdout.write("Total Expenses: " + totalExpenses + "\n")
+  printMessage(`Meal Expenses: ${totals.mealExpenses}\n`)
+  printMessage(`Total Expenses: ${totals.totalExpenses}\n`)
 }
 
-export {sumTwoValues, printHelloWorld, printReport, Expense, ExpenseType}
+export { sumTwoValues, printHelloWorld, printReport, Expense, ExpenseType }
